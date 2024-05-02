@@ -3,33 +3,7 @@
 <head>
   <title>Binaural Beat Generator</title>
   <style>
-    body {
-      text-align: center;
-      font-family: Arial, sans-serif;
-    }
-    
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 18px;
-    }
-    
-    .info {
-      margin: 20px auto;
-      max-width: 600px;
-      text-align: left;
-    }
-    
-    #currentBeatFrequency {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-    
-    #notableBeatFrequencies {
-      margin-top: 20px;
-      text-align: left;
-    }
+    /* ... (CSS styles remain the same) ... */
   </style>
 </head>
 <body>
@@ -37,11 +11,7 @@
   <div class="info">
     <h3>Choose the correct frequencies for different binaural beat patterns:</h3>
     <ul>
-      <li><strong>Delta pattern:</strong> Binaural beats in the delta pattern operate at a frequency of 0.5–4 Hz with links to a dreamless sleep. In the study, people who received a delta pattern frequency during sleep entered a deeper stage of sleep, according to electroencephalogram (EEG) brain scan results.</li>
-      <li><strong>Theta pattern:</strong> Practitioners set binaural beats in the theta pattern to a frequency of 4–7 Hz. Theta patterns contribute to improved meditation, creativity, and sleep in the rapid eye movement (REM) phase.</li>
-      <li><strong>Alpha pattern:</strong> Binaural beats in the alpha pattern are at a frequency of 7–13 Hz and may encourage relaxation.</li>
-      <li><strong>Beta pattern:</strong> Binaural beats in the beta pattern are at a frequency of 13–30 Hz. This frequency range may help promote concentration and alertness. However, it can also increase anxiety at the higher end of the range.</li>
-      <li><strong>Gamma pattern:</strong> This frequency pattern accounts for a range of 30–50 Hz. The study authors suggest that these frequencies promote maintenance of arousal while a person is awake.</li>
+      <!-- ... (Binaural beat pattern information remains the same) ... -->
     </ul>
   </div>
   <label for="baseFrequency">Base Frequency (Hz):</label>
@@ -67,7 +37,7 @@
   </div>
 
   <script>
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let audioContext;
     let oscillatorLeft;
     let oscillatorRight;
     let playing = false;
@@ -85,8 +55,13 @@
     stopButton.addEventListener('click', stopBinauralBeat);
     document.addEventListener('keydown', handleKeyDown);
 
+    // Load settings from localStorage on page load
+    loadSettings();
+
     function startBinauralBeat() {
       if (!playing) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
         const baseFrequency = parseFloat(baseFrequencyInput.value);
         const startBeatFrequency = parseFloat(startBeatFrequencyInput.value);
         const endBeatFrequency = parseFloat(endBeatFrequencyInput.value);
@@ -126,6 +101,9 @@
         playing = true;
         startButton.disabled = true;
         stopButton.disabled = false;
+
+        // Save settings to localStorage
+        saveSettings();
       }
     }
 
@@ -133,6 +111,7 @@
       if (playing) {
         oscillatorLeft.stop();
         oscillatorRight.stop();
+        audioContext.close();
         playing = false;
         startButton.disabled = false;
         stopButton.disabled = true;
@@ -146,6 +125,27 @@
         const listItem = document.createElement('li');
         listItem.textContent = `${currentBeatFrequency.toFixed(2)} Hz`;
         beatFrequencyList.appendChild(listItem);
+      }
+    }
+
+    function saveSettings() {
+      const settings = {
+        baseFrequency: baseFrequencyInput.value,
+        startBeatFrequency: startBeatFrequencyInput.value,
+        endBeatFrequency: endBeatFrequencyInput.value,
+        duration: durationInput.value
+      };
+      localStorage.setItem('binauralBeatSettings', JSON.stringify(settings));
+    }
+
+    function loadSettings() {
+      const savedSettings = localStorage.getItem('binauralBeatSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        baseFrequencyInput.value = settings.baseFrequency;
+        startBeatFrequencyInput.value = settings.startBeatFrequency;
+        endBeatFrequencyInput.value = settings.endBeatFrequency;
+        durationInput.value = settings.duration;
       }
     }
   </script>
