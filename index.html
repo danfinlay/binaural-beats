@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Binaural Beat Generator</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Binaural Beat Generator</h1>
+  <label for="frequency">Select Frequency (Hz):</label>
+  <select id="frequency">
+    <option value="3">3 Hz (Delta Waves)</option>
+    <option value="6">6 Hz (Theta Waves)</option>
+    <option value="9">9 Hz (Alpha Waves)</option>
+    <option value="15">15 Hz (Beta Waves)</option>
+    <option value="40">40 Hz (Gamma Waves)</option>
+  </select>
+  <br>
+  <button id="startButton">Start</button>
+  <button id="stopButton" disabled>Stop</button>
+
+  <script>
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let oscillatorLeft;
+    let oscillatorRight;
+    let playing = false;
+
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+    const frequencySelect = document.getElementById('frequency');
+
+    startButton.addEventListener('click', startBinauralBeat);
+    stopButton.addEventListener('click', stopBinauralBeat);
+
+    function startBinauralBeat() {
+      if (!playing) {
+        const frequency = parseFloat(frequencySelect.value);
+        const leftFrequency = 440;
+        const rightFrequency = 440 + frequency;
+
+        oscillatorLeft = audioContext.createOscillator();
+        oscillatorRight = audioContext.createOscillator();
+
+        oscillatorLeft.type = 'sine';
+        oscillatorRight.type = 'sine';
+
+        oscillatorLeft.frequency.value = leftFrequency;
+        oscillatorRight.frequency.value = rightFrequency;
+
+        oscillatorLeft.connect(audioContext.destination);
+        oscillatorRight.connect(audioContext.destination);
+
+        oscillatorLeft.start();
+        oscillatorRight.start();
+
+        playing = true;
+        startButton.disabled = true;
+        stopButton.disabled = false;
+      }
+    }
+
+    function stopBinauralBeat() {
+      if (playing) {
+        oscillatorLeft.stop();
+        oscillatorRight.stop();
+        playing = false;
+        startButton.disabled = false;
+        stopButton.disabled = true;
+      }
+    }
+  </script>
+</body>
+</html>
