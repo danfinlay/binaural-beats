@@ -3,7 +3,38 @@
 <head>
   <title>Binaural Beat Generator</title>
   <style>
-    /* ... (CSS styles remain the same) ... */
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+    }
+    
+    .info {
+      margin: 20px auto;
+      max-width: 600px;
+      text-align: left;
+    }
+    
+    #currentBeatFrequency {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    
+    #notableBeatFrequencies {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    #volumeSlider {
+      width: 200px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -11,7 +42,11 @@
   <div class="info">
     <h3>Choose the correct frequencies for different binaural beat patterns:</h3>
     <ul>
-      <!-- ... (Binaural beat pattern information remains the same) ... -->
+      <li><strong>Delta pattern:</strong> Binaural beats in the delta pattern operate at a frequency of 0.5–4 Hz with links to a dreamless sleep. In the study, people who received a delta pattern frequency during sleep entered a deeper stage of sleep, according to electroencephalogram (EEG) brain scan results.</li>
+      <li><strong>Theta pattern:</strong> Practitioners set binaural beats in the theta pattern to a frequency of 4–7 Hz. Theta patterns contribute to improved meditation, creativity, and sleep in the rapid eye movement (REM) phase.</li>
+      <li><strong>Alpha pattern:</strong> Binaural beats in the alpha pattern are at a frequency of 7–13 Hz and may encourage relaxation.</li>
+      <li><strong>Beta pattern:</strong> Binaural beats in the beta pattern are at a frequency of 13–30 Hz. This frequency range may help promote concentration and alertness. However, it can also increase anxiety at the higher end of the range.</li>
+      <li><strong>Gamma pattern:</strong> This frequency pattern accounts for a range of 30–50 Hz. The study authors suggest that these frequencies promote maintenance of arousal while a person is awake.</li>
     </ul>
   </div>
   <label for="baseFrequency">Base Frequency (Hz):</label>
@@ -25,6 +60,9 @@
   <br><br>
   <label for="duration">Session Duration (minutes):</label>
   <input type="number" id="duration" value="10" min="1" max="60" step="1">
+  <br><br>
+  <label for="volumeSlider">Volume:</label>
+  <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
   <br><br>
   <button id="startButton">Start</button>
   <button id="stopButton" disabled>Stop</button>
@@ -40,6 +78,7 @@
     let audioContext;
     let oscillatorLeft;
     let oscillatorRight;
+    let gainNode;
     let playing = false;
 
     const startButton = document.getElementById('startButton');
@@ -48,64 +87,73 @@
     const startBeatFrequencyInput = document.getElementById('startBeatFrequency');
     const endBeatFrequencyInput = document.getElementById('endBeatFrequency');
     const durationInput = document.getElementById('duration');
+    const volumeSlider = document.getElementById('volumeSlider');
     const currentBeatFrequencyDisplay = document.getElementById('currentBeatFrequency');
     const beatFrequencyList = document.getElementById('beatFrequencyList');
 
     startButton.addEventListener('click', startBinauralBeat);
     stopButton.addEventListener('click', stopBinauralBeat);
+    volumeSlider.addEventListener('input', adjustVolume);
     document.addEventListener('keydown', handleKeyDown);
 
     // Load settings from localStorage on page load
     loadSettings();
 
-    function startBinauralBeat() {
-      if (!playing) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        const baseFrequency = parseFloat(baseFrequencyInput.value);
-        const startBeatFrequency = parseFloat(startBeatFrequencyInput.value);
-        const endBeatFrequency = parseFloat(endBeatFrequencyInput.value);
-        const duration = parseFloat(durationInput.value) * 60; // Convert minutes to seconds
+  function startBinauralBeat() {
+    if (!playing) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      gainNode = audioContext.createGain();
+      gainNode.connect(audioContext.destination);
 
-        oscillatorLeft = audioContext.createOscillator();
-        oscillatorRight = audioContext.createOscillator();
+      const baseFrequency = parseFloat(baseFrequencyInput.value);
+      const startBeatFrequency = parseFloat(startBeatFrequencyInput.value);
+      const endBeatFrequency = parseFloat(endBeatFrequencyInput.value);
+      const duration = parseFloat(durationInput.value) * 60; // Convert minutes to seconds
 
-        oscillatorLeft.type = 'sine';
-        oscillatorRight.type = 'sine';
+      oscillatorLeft = audioContext.createOscillator();
+      oscillatorRight = audioContext.createOscillator();
 
-        oscillatorLeft.frequency.value = baseFrequency;
-        oscillatorRight.frequency.value = baseFrequency + startBeatFrequency;
+      oscillatorLeft.type = 'sine';
+      oscillatorRight.type = 'sine';
 
-        oscillatorLeft.connect(audioContext.destination);
-        oscillatorRight.connect(audioContext.destination);
+      oscillatorLeft.frequency.value = baseFrequency;
+      oscillatorRight.frequency.value = baseFrequency + startBeatFrequency;
 
-        oscillatorLeft.start();
-        oscillatorRight.start();
+      oscillatorLeft.connect(gainNode);
+      oscillatorRight.connect(gainNode);
 
-        // Set up the frequency sweep
-        const beatFrequencyDifference = endBeatFrequency - startBeatFrequency;
-        const beatFrequencyStep = beatFrequencyDifference / (duration * 100); // 100 steps per second
-        let currentBeatFrequency = startBeatFrequency;
+      oscillatorLeft.start();
+      oscillatorRight.start();
 
-        const sweepInterval = setInterval(() => {
-          currentBeatFrequency += beatFrequencyStep;
-          oscillatorRight.frequency.value = baseFrequency + currentBeatFrequency;
-          currentBeatFrequencyDisplay.textContent = `Current Beat Frequency: ${currentBeatFrequency.toFixed(2)} Hz`;
+      // Set up the frequency sweep
+      const beatFrequencyDifference = endBeatFrequency - startBeatFrequency;
+      const beatFrequencyStep = beatFrequencyDifference / (duration * 100); // 100 steps per second
+      let currentBeatFrequency = startBeatFrequency;
 
-          if (currentBeatFrequency >= endBeatFrequency) {
-            clearInterval(sweepInterval);
-            stopBinauralBeat();
-          }
-        }, 10); // 10 ms interval for smoother sweep
+      const sweepInterval = setInterval(() => {
+        currentBeatFrequency += beatFrequencyStep;
+        oscillatorRight.frequency.value = baseFrequency + currentBeatFrequency;
+        currentBeatFrequencyDisplay.textContent = `Current Beat Frequency: ${currentBeatFrequency.toFixed(2)} Hz`;
 
-        playing = true;
-        startButton.disabled = true;
-        stopButton.disabled = false;
+        if (
+          (beatFrequencyStep > 0 && currentBeatFrequency >= endBeatFrequency) ||
+          (beatFrequencyStep < 0 && currentBeatFrequency <= endBeatFrequency)
+        ) {
+          clearInterval(sweepInterval);
+          stopBinauralBeat();
+        }
+      }, 10); // 10 ms interval for smoother sweep
 
-        // Save settings to localStorage
-        saveSettings();
-      }
+      playing = true;
+      startButton.disabled = true;
+      stopButton.disabled = false;
+
+      // Save settings to localStorage
+      saveSettings();
     }
+  }
+
 
     function stopBinauralBeat() {
       if (playing) {
@@ -116,6 +164,13 @@
         startButton.disabled = false;
         stopButton.disabled = true;
         currentBeatFrequencyDisplay.textContent = '';
+      }
+    }
+
+    function adjustVolume() {
+      const volume = parseFloat(volumeSlider.value);
+      if (gainNode) {
+        gainNode.gain.value = volume;
       }
     }
 
@@ -133,7 +188,8 @@
         baseFrequency: baseFrequencyInput.value,
         startBeatFrequency: startBeatFrequencyInput.value,
         endBeatFrequency: endBeatFrequencyInput.value,
-        duration: durationInput.value
+        duration: durationInput.value,
+        volume: volumeSlider.value
       };
       localStorage.setItem('binauralBeatSettings', JSON.stringify(settings));
     }
@@ -146,6 +202,7 @@
         startBeatFrequencyInput.value = settings.startBeatFrequency;
         endBeatFrequencyInput.value = settings.endBeatFrequency;
         durationInput.value = settings.duration;
+        volumeSlider.value = settings.volume;
       }
     }
   </script>
