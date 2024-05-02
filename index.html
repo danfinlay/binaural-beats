@@ -17,7 +17,10 @@
 </head>
 <body>
   <h1>Binaural Beat Generator</h1>
-  <label for="frequency">Select Frequency (Hz):</label>
+  <label for="baseFrequency">Base Frequency (Hz):</label>
+  <input type="number" id="baseFrequency" value="100" min="20" max="1000" step="1">
+  <br><br>
+  <label for="frequency">Select Frequency Difference (Hz):</label>
   <select id="frequency">
     <option value="3">3 Hz (Delta Waves)</option>
     <option value="6">6 Hz (Theta Waves)</option>
@@ -38,6 +41,7 @@
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
     const frequencySelect = document.getElementById('frequency');
+    const baseFrequencyInput = document.getElementById('baseFrequency');
 
     startButton.addEventListener('click', startBinauralBeat);
     stopButton.addEventListener('click', stopBinauralBeat);
@@ -45,8 +49,9 @@
     function startBinauralBeat() {
       if (!playing) {
         const frequency = parseFloat(frequencySelect.value);
-        const leftFrequency = 440;
-        const rightFrequency = 440 + frequency;
+        const baseFrequency = parseFloat(baseFrequencyInput.value);
+        const leftFrequency = baseFrequency;
+        const rightFrequency = baseFrequency + frequency;
 
         oscillatorLeft = audioContext.createOscillator();
         oscillatorRight = audioContext.createOscillator();
@@ -81,3 +86,4 @@
   </script>
 </body>
 </html>
+
