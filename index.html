@@ -19,6 +19,17 @@
       max-width: 600px;
       text-align: left;
     }
+    
+    #currentFrequency {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    
+    #notableFrequencies {
+      margin-top: 20px;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -47,6 +58,13 @@
   <br><br>
   <button id="startButton">Start</button>
   <button id="stopButton" disabled>Stop</button>
+  
+  <div id="currentFrequency"></div>
+  
+  <div id="notableFrequencies">
+    <h3>Notable Frequencies:</h3>
+    <ul id="frequencyList"></ul>
+  </div>
 
   <script>
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -60,9 +78,12 @@
     const startFrequencyInput = document.getElementById('startFrequency');
     const endFrequencyInput = document.getElementById('endFrequency');
     const durationInput = document.getElementById('duration');
+    const currentFrequencyDisplay = document.getElementById('currentFrequency');
+    const frequencyList = document.getElementById('frequencyList');
 
     startButton.addEventListener('click', startBinauralBeat);
     stopButton.addEventListener('click', stopBinauralBeat);
+    document.addEventListener('keydown', handleKeyDown);
 
     function startBinauralBeat() {
       if (!playing) {
@@ -94,6 +115,7 @@
         const sweepInterval = setInterval(() => {
           currentFrequency += frequencyStep;
           oscillatorRight.frequency.value = baseFrequency + currentFrequency;
+          currentFrequencyDisplay.textContent = `Current Frequency: ${(baseFrequency + currentFrequency).toFixed(2)} Hz`;
 
           if (currentFrequency >= endFrequency) {
             clearInterval(sweepInterval);
@@ -114,6 +136,16 @@
         playing = false;
         startButton.disabled = false;
         stopButton.disabled = true;
+        currentFrequencyDisplay.textContent = '';
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.code === 'Space' && playing) {
+        const currentFrequency = oscillatorRight.frequency.value;
+        const listItem = document.createElement('li');
+        listItem.textContent = `${currentFrequency.toFixed(2)} Hz`;
+        frequencyList.appendChild(listItem);
       }
     }
   </script>
