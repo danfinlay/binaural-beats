@@ -13,22 +13,35 @@
       padding: 10px 20px;
       font-size: 18px;
     }
+    
+    .info {
+      margin: 20px auto;
+      max-width: 600px;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
   <h1>Binaural Beat Generator</h1>
-  <label for="baseFrequency">Base Frequency (Hz):</label>
-  <input type="number" id="baseFrequency" value="100" min="20" max="1000" step="1">
+  <div class="info">
+    <h3>Choose the correct frequencies for different binaural beat patterns:</h3>
+    <ul>
+      <li><strong>Delta pattern:</strong> Binaural beats in the delta pattern operate at a frequency of 0.5–4 Hz with links to a dreamless sleep. In the study, people who received a delta pattern frequency during sleep entered a deeper stage of sleep, according to electroencephalogram (EEG) brain scan results.</li>
+      <li><strong>Theta pattern:</strong> Practitioners set binaural beats in the theta pattern to a frequency of 4–7 Hz. Theta patterns contribute to improved meditation, creativity, and sleep in the rapid eye movement (REM) phase.</li>
+      <li><strong>Alpha pattern:</strong> Binaural beats in the alpha pattern are at a frequency of 7–13 Hz and may encourage relaxation.</li>
+      <li><strong>Beta pattern:</strong> Binaural beats in the beta pattern are at a frequency of 13–30 Hz. This frequency range may help promote concentration and alertness. However, it can also increase anxiety at the higher end of the range.</li>
+      <li><strong>Gamma pattern:</strong> This frequency pattern accounts for a range of 30–50 Hz. The study authors suggest that these frequencies promote maintenance of arousal while a person is awake.</li>
+    </ul>
+  </div>
+  <label for="startFrequency">Start Frequency (Hz):</label>
+  <input type="number" id="startFrequency" value="100" min="20" max="1000" step="1">
   <br><br>
-  <label for="frequency">Select Frequency Difference (Hz):</label>
-  <select id="frequency">
-    <option value="3">3 Hz (Delta Waves)</option>
-    <option value="6">6 Hz (Theta Waves)</option>
-    <option value="9">9 Hz (Alpha Waves)</option>
-    <option value="15">15 Hz (Beta Waves)</option>
-    <option value="40">40 Hz (Gamma Waves)</option>
-  </select>
-  <br>
+  <label for="endFrequency">End Frequency (Hz):</label>
+  <input type="number" id="endFrequency" value="200" min="20" max="1000" step="1">
+  <br><br>
+  <label for="duration">Session Duration (minutes):</label>
+  <input type="number" id="duration" value="10" min="1" max="60" step="1">
+  <br><br>
   <button id="startButton">Start</button>
   <button id="stopButton" disabled>Stop</button>
 
@@ -40,18 +53,18 @@
 
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
-    const frequencySelect = document.getElementById('frequency');
-    const baseFrequencyInput = document.getElementById('baseFrequency');
+    const startFrequencyInput = document.getElementById('startFrequency');
+    const endFrequencyInput = document.getElementById('endFrequency');
+    const durationInput = document.getElementById('duration');
 
     startButton.addEventListener('click', startBinauralBeat);
     stopButton.addEventListener('click', stopBinauralBeat);
 
     function startBinauralBeat() {
       if (!playing) {
-        const frequency = parseFloat(frequencySelect.value);
-        const baseFrequency = parseFloat(baseFrequencyInput.value);
-        const leftFrequency = baseFrequency;
-        const rightFrequency = baseFrequency + frequency;
+        const startFrequency = parseFloat(startFrequencyInput.value);
+        const endFrequency = parseFloat(endFrequencyInput.value);
+        const duration = parseFloat(durationInput.value) * 60; // Convert minutes to seconds
 
         oscillatorLeft = audioContext.createOscillator();
         oscillatorRight = audioContext.createOscillator();
@@ -59,14 +72,30 @@
         oscillatorLeft.type = 'sine';
         oscillatorRight.type = 'sine';
 
-        oscillatorLeft.frequency.value = leftFrequency;
-        oscillatorRight.frequency.value = rightFrequency;
+        oscillatorLeft.frequency.value = startFrequency;
+        oscillatorRight.frequency.value = startFrequency + 10; // Binaural beat frequency difference
 
         oscillatorLeft.connect(audioContext.destination);
         oscillatorRight.connect(audioContext.destination);
 
         oscillatorLeft.start();
         oscillatorRight.start();
+
+        // Set up the frequency sweep
+        const frequencyDifference = endFrequency - startFrequency;
+        const frequencyStep = frequencyDifference / (duration * 100); // 100 steps per second
+        let currentFrequency = startFrequency;
+
+        const sweepInterval = setInterval(() => {
+          currentFrequency += frequencyStep;
+          oscillatorLeft.frequency.value = currentFrequency;
+          oscillatorRight.frequency.value = currentFrequency + 10;
+
+          if (currentFrequency >= endFrequency) {
+            clearInterval(sweepInterval);
+            stopBinauralBeat();
+          }
+        }, 10); // 10 ms interval for smoother sweep
 
         playing = true;
         startButton.disabled = true;
@@ -86,4 +115,3 @@
   </script>
 </body>
 </html>
-
