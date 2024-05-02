@@ -20,13 +20,13 @@
       text-align: left;
     }
     
-    #currentFrequency {
+    #currentBeatFrequency {
       font-size: 24px;
       font-weight: bold;
       margin-top: 20px;
     }
     
-    #notableFrequencies {
+    #notableBeatFrequencies {
       margin-top: 20px;
       text-align: left;
     }
@@ -47,11 +47,11 @@
   <label for="baseFrequency">Base Frequency (Hz):</label>
   <input type="number" id="baseFrequency" value="110" min="20" max="1000" step="1">
   <br><br>
-  <label for="startFrequency">Start Frequency (Hz):</label>
-  <input type="number" id="startFrequency" value="0.5" min="0.5" max="50" step="0.1">
+  <label for="startBeatFrequency">Start Beat Frequency (Hz):</label>
+  <input type="number" id="startBeatFrequency" value="0.5" min="0.5" max="50" step="0.1">
   <br><br>
-  <label for="endFrequency">End Frequency (Hz):</label>
-  <input type="number" id="endFrequency" value="4" min="0.5" max="50" step="0.1">
+  <label for="endBeatFrequency">End Beat Frequency (Hz):</label>
+  <input type="number" id="endBeatFrequency" value="4" min="0.5" max="50" step="0.1">
   <br><br>
   <label for="duration">Session Duration (minutes):</label>
   <input type="number" id="duration" value="10" min="1" max="60" step="1">
@@ -59,11 +59,11 @@
   <button id="startButton">Start</button>
   <button id="stopButton" disabled>Stop</button>
   
-  <div id="currentFrequency"></div>
+  <div id="currentBeatFrequency"></div>
   
-  <div id="notableFrequencies">
-    <h3>Notable Frequencies:</h3>
-    <ul id="frequencyList"></ul>
+  <div id="notableBeatFrequencies">
+    <h3>Notable Beat Frequencies:</h3>
+    <ul id="beatFrequencyList"></ul>
   </div>
 
   <script>
@@ -75,11 +75,11 @@
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
     const baseFrequencyInput = document.getElementById('baseFrequency');
-    const startFrequencyInput = document.getElementById('startFrequency');
-    const endFrequencyInput = document.getElementById('endFrequency');
+    const startBeatFrequencyInput = document.getElementById('startBeatFrequency');
+    const endBeatFrequencyInput = document.getElementById('endBeatFrequency');
     const durationInput = document.getElementById('duration');
-    const currentFrequencyDisplay = document.getElementById('currentFrequency');
-    const frequencyList = document.getElementById('frequencyList');
+    const currentBeatFrequencyDisplay = document.getElementById('currentBeatFrequency');
+    const beatFrequencyList = document.getElementById('beatFrequencyList');
 
     startButton.addEventListener('click', startBinauralBeat);
     stopButton.addEventListener('click', stopBinauralBeat);
@@ -88,8 +88,8 @@
     function startBinauralBeat() {
       if (!playing) {
         const baseFrequency = parseFloat(baseFrequencyInput.value);
-        const startFrequency = parseFloat(startFrequencyInput.value);
-        const endFrequency = parseFloat(endFrequencyInput.value);
+        const startBeatFrequency = parseFloat(startBeatFrequencyInput.value);
+        const endBeatFrequency = parseFloat(endBeatFrequencyInput.value);
         const duration = parseFloat(durationInput.value) * 60; // Convert minutes to seconds
 
         oscillatorLeft = audioContext.createOscillator();
@@ -99,7 +99,7 @@
         oscillatorRight.type = 'sine';
 
         oscillatorLeft.frequency.value = baseFrequency;
-        oscillatorRight.frequency.value = baseFrequency + startFrequency;
+        oscillatorRight.frequency.value = baseFrequency + startBeatFrequency;
 
         oscillatorLeft.connect(audioContext.destination);
         oscillatorRight.connect(audioContext.destination);
@@ -108,16 +108,16 @@
         oscillatorRight.start();
 
         // Set up the frequency sweep
-        const frequencyDifference = endFrequency - startFrequency;
-        const frequencyStep = frequencyDifference / (duration * 100); // 100 steps per second
-        let currentFrequency = startFrequency;
+        const beatFrequencyDifference = endBeatFrequency - startBeatFrequency;
+        const beatFrequencyStep = beatFrequencyDifference / (duration * 100); // 100 steps per second
+        let currentBeatFrequency = startBeatFrequency;
 
         const sweepInterval = setInterval(() => {
-          currentFrequency += frequencyStep;
-          oscillatorRight.frequency.value = baseFrequency + currentFrequency;
-          currentFrequencyDisplay.textContent = `Current Frequency: ${(baseFrequency + currentFrequency).toFixed(2)} Hz`;
+          currentBeatFrequency += beatFrequencyStep;
+          oscillatorRight.frequency.value = baseFrequency + currentBeatFrequency;
+          currentBeatFrequencyDisplay.textContent = `Current Beat Frequency: ${currentBeatFrequency.toFixed(2)} Hz`;
 
-          if (currentFrequency >= endFrequency) {
+          if (currentBeatFrequency >= endBeatFrequency) {
             clearInterval(sweepInterval);
             stopBinauralBeat();
           }
@@ -136,16 +136,16 @@
         playing = false;
         startButton.disabled = false;
         stopButton.disabled = true;
-        currentFrequencyDisplay.textContent = '';
+        currentBeatFrequencyDisplay.textContent = '';
       }
     }
 
     function handleKeyDown(event) {
       if (event.code === 'Space' && playing) {
-        const currentFrequency = oscillatorRight.frequency.value;
+        const currentBeatFrequency = oscillatorRight.frequency.value - oscillatorLeft.frequency.value;
         const listItem = document.createElement('li');
-        listItem.textContent = `${currentFrequency.toFixed(2)} Hz`;
-        frequencyList.appendChild(listItem);
+        listItem.textContent = `${currentBeatFrequency.toFixed(2)} Hz`;
+        beatFrequencyList.appendChild(listItem);
       }
     }
   </script>
