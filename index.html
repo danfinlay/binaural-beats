@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Binaural Beat Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   <style>
     body {
       text-align: center;
@@ -70,16 +71,15 @@
   <div id="currentBeatFrequency"></div>
   
   <div id="notableBeatFrequencies">
-    <p>Press spacebar to note a frequency you are hearing.</p>
     <h3>Notable Beat Frequencies:</h3>
     <ul id="beatFrequencyList"></ul>
   </div>
 
   <script>
-    let audioContext;
     let oscillatorLeft;
     let oscillatorRight;
-    let gainNode;
+    let pannerLeft;
+    let pannerRight;
     let playing = false;
 
     const startButton = document.getElementById('startButton');
@@ -101,66 +101,62 @@
     loadSettings();
 
 
-  function startBinauralBeat() {
-    if (!playing) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      gainNode = audioContext.createGain();
-      gainNode.connect(audioContext.destination);
+    function startBinauralBeat() {
+      if (!playing) {
+        // Create an AudioContext
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      const baseFrequency = parseFloat(baseFrequencyInput.value);
-      const startBeatFrequency = parseFloat(startBeatFrequencyInput.value);
-      const endBeatFrequency = parseFloat(endBeatFrequencyInput.value);
-      const duration = parseFloat(durationInput.value) * 60; // Convert minutes to seconds
-
-      oscillatorLeft = audioContext.createOscillator();
-      oscillatorRight = audioContext.createOscillator();
-
-      oscillatorLeft.type = 'sine';
-      oscillatorRight.type = 'sine';
-
-      oscillatorLeft.frequency.value = baseFrequency;
-      oscillatorRight.frequency.value = baseFrequency + startBeatFrequency;
-
-      oscillatorLeft.connect(gainNode);
-      oscillatorRight.connect(gainNode);
-
-      oscillatorLeft.start();
-      oscillatorRight.start();
-
-      // Set up the frequency sweep
-      const beatFrequencyDifference = endBeatFrequency - startBeatFrequency;
-      const beatFrequencyStep = beatFrequencyDifference / (duration * 100); // 100 steps per second
-      let currentBeatFrequency = startBeatFrequency;
-
-      const sweepInterval = setInterval(() => {
-        currentBeatFrequency += beatFrequencyStep;
-        oscillatorRight.frequency.value = baseFrequency + currentBeatFrequency;
-        currentBeatFrequencyDisplay.textContent = `Current Beat Frequency: ${currentBeatFrequency.toFixed(2)} Hz`;
-
-        if (
-          (beatFrequencyStep > 0 && currentBeatFrequency >= endBeatFrequency) ||
-          (beatFrequencyStep < 0 && currentBeatFrequency <= endBeatFrequency)
-        ) {
-          clearInterval(sweepInterval);
-          stopBinauralBeat();
+        // Resume the AudioContext if it is suspended
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
         }
-      }, 10); // 10 ms interval for smoother sweep
 
-      playing = true;
-      startButton.disabled = true;
-      stopButton.disabled = false;
+        const baseFrequency = parseFloat(baseFrequencyInput.value);
+        const startBeatFrequency = parseFloat(startBeatFrequencyInput.value);
+        const endBeatFrequency = parseFloat(endBeatFrequencyInput.value);
+        const duration = parseFloat(durationInput.value) * 60; // Convert minutes to seconds
 
-      // Save settings to localStorage
-      saveSettings();
+        pannerLeft = new Tone.Panner(-1).toDestination(); // Pan hard left
+        pannerRight = new Tone.Panner(1).toDestination(); // Pan hard right
+
+        oscillatorLeft = new Tone.Oscillator(baseFrequency, 'sine').connect(pannerLeft);
+        oscillatorRight = new Tone.Oscillator(baseFrequency + startBeatFrequency, 'sine').connect(pannerRight);
+
+        oscillatorLeft.volume.value = -6; // Adjust volume to a comfortable level
+        oscillatorRight.volume.value = -6;
+
+        oscillatorLeft.start();
+        oscillatorRight.start();
+
+        // Set up the frequency sweep
+        oscillatorRight.frequency.rampTo(baseFrequency + endBeatFrequency, duration);
+
+        // Update current beat frequency display
+        updateFrequencyInterval = setInterval(() => {
+          const currentBeatFrequency = oscillatorRight.frequency.value - oscillatorLeft.frequency.value;
+          currentBeatFrequencyDisplay.textContent = `Current Beat Frequency: ${currentBeatFrequency.toFixed(2)} Hz`;
+        }, 100);
+
+        // Stop the binaural beat after the specified duration
+        setTimeout(() => {
+          stopBinauralBeat();
+        }, duration * 1000);
+
+        playing = true;
+        startButton.disabled = true;
+        stopButton.disabled = false;
+
+        // Save settings to localStorage
+        saveSettings();
+      }
     }
-  }
-
 
     function stopBinauralBeat() {
       if (playing) {
         oscillatorLeft.stop();
         oscillatorRight.stop();
-        audioContext.close();
+        pannerLeft.disconnect();
+        pannerRight.disconnect();
         playing = false;
         startButton.disabled = false;
         stopButton.disabled = true;
@@ -170,9 +166,7 @@
 
     function adjustVolume() {
       const volume = parseFloat(volumeSlider.value);
-      if (gainNode) {
-        gainNode.gain.value = volume;
-      }
+      Tone.Destination.volume.rampTo(Tone.gainToDb(volume), 0.1);
     }
 
     function handleKeyDown(event) {
@@ -206,6 +200,14 @@
         volumeSlider.value = settings.volume;
       }
     }
+
+    // Handle visibilitychange event to resume audio context when the page becomes visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        Tone.getContext().resume();
+      }
+    });
   </script>
 </body>
 </html>
+
